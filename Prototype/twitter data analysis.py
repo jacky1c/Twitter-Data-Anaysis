@@ -4,160 +4,58 @@
 Created on Mon Jan 28 12:09:09 2019
 
 @author: jacky
-
-from tweepy import OAuthHandler
-from tweepy import API
-from tweepy import Stream
-from slistener import SListener
-
-consumer_key = ''
-consumer_secret = ''
-access_token = ''
-access_token_secret = ''
-
-# Consumer key authentication
-auth = OAuthHandler(consumer_key, consumer_secret)
-
-# Access key authentication
-auth.set_access_token(access_token, access_token_secret)
-
-# Set up the API with the authentication handler
-api = API(auth)
-
-
-
-# Set up words to track
-keywords_to_track = ('#rstats', '#python')
-
-# Instantiate the SListener object 
-listen = SListener(api)
-
-# Instantiate the Stream object
-stream = Stream(auth, listen)
-
-# Begin collecting data
-stream.filter(track = keywords_to_track)
-
-print(stream.sample())
-"""
-"""
-import tweepy
-from tweepy import Stream
-from tweepy.streaming import StreamListener
-from tweepy import OAuthHandler
-import json
-
-
-
-auth = OAuthHandler(consumer_key, consumer_secret)
-auth.set_access_token(access_token, access_token_secret)
-
-api = tweepy.API(auth)
-
-
-
-def parse(cls, api, raw):
-    status = cls.first_parse(api, raw)
-    setattr(status, 'json', json.dumps(raw))
-    return status
-
-
-tweepy.models.Status.first_parse = tweepy.models.Status.parse
-tweepy.models.Status.parse = parse
-
-
-class MyListener(tweepy.StreamListener):
-    def on_data(self, data):
-        try:
-            with open('FILENAME.json', 'a') as f:
-                f.write(data)
-                return True
-        except BaseException as e:
-            print("Error on_data: %s" % str(e))
-        return True
-
-    def on_error(self, status):
-        print(status)
-        return True
-
-
-twitter_stream = Stream(auth, MyListener())
-twitter_stream.filter(track=['#HASHTAG_TO_SEARCH'])
-"""                            
-
+"""                         
                              
-                             
+import pandas as pd  
+import numpy as np              
 from credentials import *
 import tweepy
-from slistener import SListener
-import json
 from tweepy.streaming import StreamListener
+from slistener import SListener
+from nltk.sentiment.vader import SentimentIntensityAnalyzer
+
+import datetime
+import json
+from pprint import pprint
+from functions import * # self defined functions
 
 
+# File to save Twitter data
+currentDT = datetime.datetime.now()
+timeStr = currentDT.strftime("%Y-%m-%d_%H:%M:%S")
+outfilename = 'superbowl_'+timeStr+'.json'
 
+# Collect data from Twitter API and export to json file
+collect_twitter_data(outfilename)    
+        
+# Load json data from file to python dictionary
+with open('superbowl_2019-02-03_15:32:00.json') as infile:
+    data = json.load(infile)
 
-# Consumer key authentication
-auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
+# Flatten twitter data
+tweets_list = flatten_tweets(data)
 
-# Access key authentication
-auth.set_access_token(ACCESS_TOKEN, ACCESS_SECRET)
+# Create a DataFrame from `twitter data
+tweets = pd.DataFrame(tweets_list)
 
-# Set up the API with the authentication handler
-api = tweepy.API(auth)
+# Print out the first 5 tweets from this dataset
+#print(tweets['text'].values[0:5])
 
-# Set up words to track
-keywords_to_track = ('red')
+# Get a Series of tweets that contain a keyword in tweet, quoted tweet, or retweet
+#check_word = check_word_in_tweet('ram', tweets)
+#print(np.sum(check_word)/tweets.shape[0])
 
-# Instantiate the SListener object
-#listen = SListener()
-listen = SListener(api)
+# Instantiate sentiment intensity analyzer
+sid = SentimentIntensityAnalyzer()
 
-# Instantiate the Stream object
-stream = tweepy.Stream(auth, listen)
+# Generate sentiment scores by applying polarity_scores function to all tweet text
+sentiment_scores = tweets['text'].apply(sid.polarity_scores)
 
-print("Before")
+# Extract compound from sentiment score. Options are: neg, neu, pos, compound
+sentiment = sentiment_scores.apply(lambda x: x['compound'])
 
-# Begin collecting data
-#stream.filter(track = '#Trump', languages=["en"])
-print("after")
-
-api1 = tweepy.API(auth)
-api2 = tweepy.API(auth)
-api3 = tweepy.API(auth)
-api4 = tweepy.API(auth)
-#for tweet in tweepy.Cursor(api.search, q='#Trump',rpp=100).items(10):
-#    print (tweet.created_at, tweet.text)
-#This line is whats actually being used
-test = tweepy.Cursor(api1.search, q=keywords_to_track, languages=["en"]).items(10)
-
-num = 0
-
-for twit in test:
-    num = num + 1
-    print(num, ".")
-    print(twit.user.screen_name)
-    print(twit.text)
-
-    #print(twit.retweeted_status)
-    print()
-    #tweet = json.loads(twit)
-
-tweet_json = tweepy.Cursor(api1.search, q=keywords_to_track, languages=["en"]).items(1)
-
-#tweet = json.loads(tweet_json)
-#print(tweet_json.id)
-
-# We create a tweet list as follows:
-tweets = api2.user_timeline(screen_name="realDonaldTrump", count=200)
-print("Number of tweets extracted: {}.\n".format(len(tweets)))
-
-# We print the most recent 5 tweets:
-#print("5 recent tweets:\n")
-for tweet in tweets[:5]:
-    print(tweet.text)
-    print("RETWEETS")
-    rt = api3.retweets(tweet.id)
-    for tt in rt[:5]:
-        print(tt.user.screen_name)
-    qt = api4.quotes(tweet.id)
-    print()
+# Calculate average compound score for tweets that contain keyword
+sentiment_patriots = sentiment[check_word_in_tweet('patriots', tweets)].mean()
+sentiment_ram = sentiment[check_word_in_tweet('ram', tweets)].mean()
+print(sentiment_patriots)
+print(sentiment_ram)
