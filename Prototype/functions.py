@@ -6,6 +6,7 @@ Created on Sun Feb  3 13:14:44 2019
 """
 import json
 import tweepy
+import numpy as np
 from tweepy.streaming import StreamListener
 from slistener import SListener
 import pandas as pd
@@ -19,14 +20,6 @@ def collect_twitter_data(outfilename):
     # =============================================================================
     
     # Twitter App access keys for @user
-
-    # Consume:
-    CONSUMER_KEY    = 'azhIXA4y3kR5xLcceOpHyLxtU'
-    CONSUMER_SECRET = 'YWmMDQaGsck3J9Suboj5Pv6r6UhZ7CJozGV0srcQXk8uW0Mjfr'
-
-    # Access:
-    ACCESS_TOKEN  = '1955396544-vbAEUgorMO14epJ808JrthxKfxh3PULVtRv6V84'
-    ACCESS_SECRET = 'thT5XIRYYq1Qbt9rnSVUzworHwmsKH0cY0QQta1jkiGKz'
 
 
     # Consumer key authentication
@@ -113,27 +106,28 @@ def check_word_in_tweet(word, data):
     return contains_column
 
 def plotMapTime(ds_tweets, word1, word2):
-    
-
     ds_tweets['word1'] = check_word_in_tweet(word1, ds_tweets)
     ds_tweets['word2'] = check_word_in_tweet(word2, ds_tweets)
 
-    ds_tweets['word1'].index = pd.to_datetime(ds_tweets.index, unit='s')
-    ds_tweets['word2'].index = pd.to_datetime(ds_tweets.index, unit='s')
+    ds_tweets['word1'].index = pd.to_datetime(ds_tweets['created_at'], format='%Y-%m-%d %H:%M:%S')
+    ds_tweets['word2'].index = pd.to_datetime(ds_tweets['created_at'], format='%Y-%m-%d %H:%M:%S')
 
 
     mean1 = ds_tweets['word1'].resample('1 min').mean()
     mean2 = ds_tweets['word2'].resample('1 min').mean()
+    mean1mask = np.isfinite(mean1) # mask contains bool value indicating if on that minute we have data
+    mean2mask = np.isfinite(mean2)
+    
+
+    plt.axes([0, 0, 1, 1])
+    plt.plot(mean1.index[mean1mask], mean1[mean1mask], color = 'green')
+    plt.plot(mean2.index[mean2mask], mean2[mean2mask], color = 'blue')
 
 
-
-    plt.plot(mean1.index.minute, mean1, color = 'green')
-    plt.plot(mean2.index.minute, mean2, color = 'blue')
-
-
-    plt.xlabel('Minute'); plt.ylabel('Frequency')
+    plt.xlabel('Time'); plt.ylabel('Frequency')
     plt.title('Language mentions over time')
     plt.legend((word1, word2))
+    
     plt.show()
 
 
