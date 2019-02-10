@@ -22,6 +22,7 @@ def collect_twitter_data(outfilename):
     # Twitter App access keys for @user
 
 
+
     # Consumer key authentication
     auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
 
