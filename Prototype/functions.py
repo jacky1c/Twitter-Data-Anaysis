@@ -6,7 +6,6 @@ Created on Sun Feb  3 13:14:44 2019
 """
 import json
 import tweepy
-import numpy as np
 from tweepy.streaming import StreamListener
 from slistener import SListener
 import pandas as pd
@@ -21,6 +20,13 @@ def collect_twitter_data(outfilename):
     
     # Twitter App access keys for @user
 
+    # Consume:
+    CONSUMER_KEY    = 'azhIXA4y3kR5xLcceOpHyLxtU'
+    CONSUMER_SECRET = 'YWmMDQaGsck3J9Suboj5Pv6r6UhZ7CJozGV0srcQXk8uW0Mjfr'
+
+    # Access:
+    ACCESS_TOKEN  = '1955396544-vbAEUgorMO14epJ808JrthxKfxh3PULVtRv6V84'
+    ACCESS_SECRET = 'thT5XIRYYq1Qbt9rnSVUzworHwmsKH0cY0QQta1jkiGKz'
 
 
     # Consumer key authentication
@@ -69,6 +75,9 @@ def flatten_tweets(tweets_dict_list):
         tweet_obj['user-screen_name'] = tweet_obj['user']['screen_name']
         tweet_obj['created_at'] =  pd.to_datetime(tweet_obj['created_at'])
         
+        #store the location
+        tweet_obj['user-location'] = tweet_obj['user']['location']
+        
         
         # Check if this is a 140+ character tweet
         if 'extended_tweet' in tweet_obj:
@@ -89,6 +98,12 @@ def flatten_tweets(tweets_dict_list):
             if 'extended_tweet' in tweet_obj['quoted_status']:
                 tweet_obj['quoted_status-text'] = tweet_obj['quoted_status-text'] + tweet_obj['quoted_status']['extended_tweet']['full_text']
         
+        
+        
+        
+        
+        
+        
         tweets_list.append(tweet_obj)
     return tweets_list
 
@@ -107,28 +122,27 @@ def check_word_in_tweet(word, data):
     return contains_column
 
 def plotMapTime(ds_tweets, word1, word2):
+    
+
     ds_tweets['word1'] = check_word_in_tweet(word1, ds_tweets)
     ds_tweets['word2'] = check_word_in_tweet(word2, ds_tweets)
 
-    ds_tweets['word1'].index = pd.to_datetime(ds_tweets['created_at'], format='%Y-%m-%d %H:%M:%S')
-    ds_tweets['word2'].index = pd.to_datetime(ds_tweets['created_at'], format='%Y-%m-%d %H:%M:%S')
+    ds_tweets['word1'].index = pd.to_datetime(ds_tweets.index, unit='s')
+    ds_tweets['word2'].index = pd.to_datetime(ds_tweets.index, unit='s')
 
 
     mean1 = ds_tweets['word1'].resample('1 min').mean()
     mean2 = ds_tweets['word2'].resample('1 min').mean()
-    mean1mask = np.isfinite(mean1) # mask contains bool value indicating if on that minute we have data
-    mean2mask = np.isfinite(mean2)
-    
-
-    plt.axes([0, 0, 1, 1])
-    plt.plot(mean1.index[mean1mask], mean1[mean1mask], color = 'green')
-    plt.plot(mean2.index[mean2mask], mean2[mean2mask], color = 'blue')
 
 
-    plt.xlabel('Time'); plt.ylabel('Frequency')
+
+    plt.plot(mean1.index.minute, mean1, color = 'green')
+    plt.plot(mean2.index.minute, mean2, color = 'blue')
+
+
+    plt.xlabel('Minute'); plt.ylabel('Frequency')
     plt.title('Language mentions over time')
     plt.legend((word1, word2))
-    
     plt.show()
 
 
@@ -154,9 +168,84 @@ def analyzeSentiment(ds_tweets, word):
 
 
 
+def plotSentiment(ds_tweets, word1, word2):
+    
+    sid = SentimentIntensityAnalyzer()
 
+    # Generate sentiment scores by applying polarity_scores function to all tweet text
+    sentiment_scores = ds_tweets['text'].apply(sid.polarity_scores)
 
+    # Extract compound from sentiment score. Options are: neg, neu, pos, compound
+    sentiment = sentiment_scores.apply(lambda x: x['compound'])
+    
+    
 
+    ds_tweets['word1'] = sentiment[check_word_in_tweet(word1, ds_tweets)]
+    
+    ds_tweets['word1'].index = pd.to_datetime(ds_tweets.index, unit='s')
+    
+    
+    sentiment1 = ds_tweets['word1'].resample('1 min').mean()
+    
+    
+    
+    
+    
+    ds_tweets['word2'] = sentiment[check_word_in_tweet(word2, ds_tweets)]
+    
+    ds_tweets['word2'].index = pd.to_datetime(ds_tweets.index, unit='s')
+    
+    
+    sentiment2 = ds_tweets['word2'].resample('1 min').mean()
+    
+    
+  
+    
+    
 
+#
+    plt.plot(sentiment1.index.minute, sentiment1, color = 'green')
+    plt.plot(sentiment2.index.minute, sentiment2, color = 'blue')
 
+    plt.xlabel('Minute')
+    plt.ylabel('Sentiment')
+    plt.title('Sentiment of data science languages')
+    plt.legend((word1, word2))
+    plt.show()
 
+    
+    
+    
+    
+def getBoundingBox(place):
+    
+#    if place['place'] is not None:
+#        #print(place['text'])
+#        print (place['place']['name'])
+#        print ("hi")
+    
+    
+    place['long'] = list(map(lambda place: place['coordinates']['coordinates'][0]
+                        if place['coordinates'] != None else 'NaN', place))
+ 
+    place['latt'] = list(map(lambda place: place['coordinates']['coordinates'][1]
+                        if place['coordinates'] != None else 'NaN', place))
+    
+    
+    
+    #return place['place']['bounding_box']['coordinates']
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
