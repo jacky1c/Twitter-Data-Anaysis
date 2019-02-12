@@ -11,6 +11,7 @@ from slistener import SListener
 import pandas as pd
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import matplotlib.pyplot as plt  
+import numpy as np   
 
 def collect_twitter_data(outfilename):
     """ Collect data through Twitter API and export to JSON file. """
@@ -78,6 +79,8 @@ def flatten_tweets(tweets_dict_list):
         #store the location
         tweet_obj['user-location'] = tweet_obj['user']['location']
         
+
+
         
         # Check if this is a 140+ character tweet
         if 'extended_tweet' in tweet_obj:
@@ -90,16 +93,18 @@ def flatten_tweets(tweets_dict_list):
             tweet_obj['retweeted_status-user-screen_name'] = tweet_obj['retweeted_status']['user']['screen_name']
             # Store the retweet text in 'retweeted_status-text'
             tweet_obj['retweeted_status-text'] = tweet_obj['retweeted_status']['text']
+            tweet_obj['retweet-location'] = tweet_obj['retweeted_status']['user']['location']
             if 'extended_tweet' in tweet_obj['retweeted_status']:
                 tweet_obj['retweeted_status-text'] = tweet_obj['retweeted_status-text'] + tweet_obj['retweeted_status']['extended_tweet']['full_text']
             
         if 'quoted_status' in tweet_obj:
             tweet_obj['quoted_status-text'] = tweet_obj['quoted_status']['text'] 
+            tweet_obj['quoted-location'] = tweet_obj['quoted_status']['user']['location']
             if 'extended_tweet' in tweet_obj['quoted_status']:
                 tweet_obj['quoted_status-text'] = tweet_obj['quoted_status-text'] + tweet_obj['quoted_status']['extended_tweet']['full_text']
         
         
-        
+
         
         
         
@@ -215,37 +220,53 @@ def plotSentiment(ds_tweets, word1, word2):
 
     
     
+
+
+
+
+def SortByState(tweets):
+    
+#    tweets.index = tweets['user-location']
+#    
+#    tweets['currentState'] = "Alabama"
+#    
+#    hold = tweets.apply(lambda x: x['currentState'] in x['user-location'], axis=1)
+#    
+#    containsAL1 = tweets[tweets['user-location'].str.contains("TX")==True]
+#    
+#    #hold = tweets[tweets['user-location'].str.contains("AL")]
+#    containsAL2 = tweets[tweets['user-location'].str.contains(" AL")]
+#
+#    print(hold)
+#    print(np.sum(hold))
+   # print(containsAL1['user-location'])
+
+    
+#    test = tweets[tweets['user-location'].str.contains(" TX", case = False)]
+#    test |= tweets[tweets['retweet-location'].str.contains(" TX", case = False)]
+#    test |= tweets[tweets['quoted-location'].str.contains(" TX", case = False)]
+#    print(np.sum(test))
+#    
+    
+#    test = tweets[tweets['user-location'].str.contains(" TX", case = False)]
+#    test |= tweets['retweet-location'].str.contains(" TX", case = False)
+#    test |= tweets['quoted-location'].str.contains(" TX", case = False)
+#    print(np.sum(test))
     
     
-def getBoundingBox(place):
+    containsAL1 = tweets[tweets['user-location'].str.contains("Texas")==True]
+    containsALR = tweets[tweets['retweet-location'].str.contains("Texas")==True]
+    containsALQ = tweets[tweets['quoted-location'].str.contains("Texas")==True]
+    #print(np.sum(containsAL1))
     
-#    if place['place'] is not None:
-#        #print(place['text'])
-#        print (place['place']['name'])
-#        print ("hi")
+    print("Normal")
     
+    print(containsAL1['text'])
     
-    place['long'] = list(map(lambda place: place['coordinates']['coordinates'][0]
-                        if place['coordinates'] != None else 'NaN', place))
- 
-    place['latt'] = list(map(lambda place: place['coordinates']['coordinates'][1]
-                        if place['coordinates'] != None else 'NaN', place))
+    print("Retweet")
+    print(containsALR['text'])
     
-    
-    
-    #return place['place']['bounding_box']['coordinates']
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    print("Quoted")
+    print(containsALR['text'])
     
     
