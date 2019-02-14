@@ -185,23 +185,17 @@ def plotSentiment(ds_tweets, word1, word2):
     
     
 
-    ds_tweets['word1'] = sentiment[check_word_in_tweet(word1, ds_tweets)]
-    
-    ds_tweets['word1'].index = pd.to_datetime(ds_tweets.index, unit='s')
-    
-    
-    sentiment1 = ds_tweets['word1'].resample('1 min').mean()
+    ds_tweets['sentiment1'] = sentiment[check_word_in_tweet(word1, ds_tweets)] 
+    ds_tweets['sentiment1'].index = pd.to_datetime(ds_tweets.index, unit='s')
+    sentiment1 = ds_tweets['sentiment1'].resample('1 min').mean()
     
     
     
     
     
-    ds_tweets['word2'] = sentiment[check_word_in_tweet(word2, ds_tweets)]
-    
-    ds_tweets['word2'].index = pd.to_datetime(ds_tweets.index, unit='s')
-    
-    
-    sentiment2 = ds_tweets['word2'].resample('1 min').mean()
+    ds_tweets['sentiment2'] = sentiment[check_word_in_tweet(word2, ds_tweets)]
+    ds_tweets['sentiment2'].index = pd.to_datetime(ds_tweets.index, unit='s')
+    sentiment2 = ds_tweets['sentiment2'].resample('1 min').mean()
     
     
   
@@ -224,49 +218,37 @@ def plotSentiment(ds_tweets, word1, word2):
 
 
 
-def SortByState(tweets):
+def SortByState(tweets, word1):
+
+    containsAL1 = tweets[tweets['user-location'].str.contains(" AL")==True]
+    containsALR = tweets[tweets['retweet-location'].str.contains(" AL")==True]
+    containsALQ = tweets[tweets['quoted-location'].str.contains(" AL")==True]
     
-#    tweets.index = tweets['user-location']
-#    
-#    tweets['currentState'] = "Alabama"
-#    
-#    hold = tweets.apply(lambda x: x['currentState'] in x['user-location'], axis=1)
-#    
-#    containsAL1 = tweets[tweets['user-location'].str.contains("TX")==True]
-#    
-#    #hold = tweets[tweets['user-location'].str.contains("AL")]
-#    containsAL2 = tweets[tweets['user-location'].str.contains(" AL")]
-#
-#    print(hold)
-#    print(np.sum(hold))
-   # print(containsAL1['user-location'])
+    containsAL2 = tweets[tweets['user-location'].str.contains(" Alabama")==True]
+    containsALR2 = tweets[tweets['retweet-location'].str.contains(" Alabama")==True]
+    containsALQ2 = tweets[tweets['quoted-location'].str.contains(" Alabama")==True]
 
     
-#    test = tweets[tweets['user-location'].str.contains(" TX", case = False)]
-#    test |= tweets[tweets['retweet-location'].str.contains(" TX", case = False)]
-#    test |= tweets[tweets['quoted-location'].str.contains(" TX", case = False)]
-#    print(np.sum(test))
-#    
-    
-#    test = tweets[tweets['user-location'].str.contains(" TX", case = False)]
-#    test |= tweets['retweet-location'].str.contains(" TX", case = False)
-#    test |= tweets['quoted-location'].str.contains(" TX", case = False)
-#    print(np.sum(test))
     
     
-    containsAL1 = tweets[tweets['user-location'].str.contains("Texas")==True]
-    containsALR = tweets[tweets['retweet-location'].str.contains("Texas")==True]
-    containsALQ = tweets[tweets['quoted-location'].str.contains("Texas")==True]
-    #print(np.sum(containsAL1))
+    holdTweets1 = check_word_in_tweet(word1, containsAL1)
+    holdTweets2 = check_word_in_tweet(word1, containsALR)
+    holdTweets3 = check_word_in_tweet(word1, containsALQ)
+    holdTweets4 = check_word_in_tweet(word1, containsAL2)
+    holdTweets5 = check_word_in_tweet(word1, containsALR2)
+    holdTweets6 = check_word_in_tweet(word1, containsALQ2)
     
-    print("Normal")
     
-    print(containsAL1['text'])
+    numOfTweets = np.sum(holdTweets1) + np.sum(holdTweets2) + np.sum(holdTweets3) + np.sum(holdTweets4) + np.sum(holdTweets5) + np.sum(holdTweets6)
     
-    print("Retweet")
-    print(containsALR['text'])
+  
+
     
-    print("Quoted")
-    print(containsALR['text'])
+    sumAL = np.sum(containsAL1['sentiment1']) + np.sum(containsALR['sentiment1']) + np.sum(containsALQ['sentiment1']) + np.sum(containsAL2['sentiment1']) + np.sum(containsALR2['sentiment1']) + np.sum(containsALQ2['sentiment1'])
+    AverageAL = sumAL/numOfTweets
+    
+    
+
+    
     
     
