@@ -214,19 +214,23 @@ def plotSentiment(ds_tweets, word1, word2):
 
     
     
-
-
-
-
-def SortByState(tweets, word1):
-
-    containsAL1 = tweets[tweets['user-location'].str.contains(" AL")==True]
-    containsALR = tweets[tweets['retweet-location'].str.contains(" AL")==True]
-    containsALQ = tweets[tweets['quoted-location'].str.contains(" AL")==True]
     
-    containsAL2 = tweets[tweets['user-location'].str.contains(" Alabama")==True]
-    containsALR2 = tweets[tweets['retweet-location'].str.contains(" Alabama")==True]
-    containsALQ2 = tweets[tweets['quoted-location'].str.contains(" Alabama")==True]
+ #https://stackoverflow.com/questions/24914735/convert-numpy-list-or-float-to-string-in-python   
+def to_str(var):
+    return str(list(np.reshape(np.asarray(var), (1, np.size(var)))[0]))[1:-1]
+
+
+
+
+def SortByState(tweets, word1, state, abbrv, out):
+
+    containsAL1 = tweets[tweets['user-location'].str.contains(abbrv)==True]
+    containsALR = tweets[tweets['retweet-location'].str.contains(abbrv)==True]
+    containsALQ = tweets[tweets['quoted-location'].str.contains(abbrv)==True]
+    
+    containsAL2 = tweets[tweets['user-location'].str.contains(state)==True]
+    containsALR2 = tweets[tweets['retweet-location'].str.contains(state)==True]
+    containsALQ2 = tweets[tweets['quoted-location'].str.contains(state)==True]
 
     
     
@@ -247,7 +251,14 @@ def SortByState(tweets, word1):
     sumAL = np.sum(containsAL1['sentiment1']) + np.sum(containsALR['sentiment1']) + np.sum(containsALQ['sentiment1']) + np.sum(containsAL2['sentiment1']) + np.sum(containsALR2['sentiment1']) + np.sum(containsALQ2['sentiment1'])
     AverageAL = sumAL/numOfTweets
     
+    stringAv = to_str(AverageAL)
     
+    
+    
+    out.write(state)
+    out.write(" ")
+    out.write(stringAv)
+    out.write("\n")
 
     
     
