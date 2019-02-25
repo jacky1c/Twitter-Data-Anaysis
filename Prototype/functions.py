@@ -12,6 +12,8 @@ import pandas as pd
 from nltk.sentiment.vader import SentimentIntensityAnalyzer
 import matplotlib.pyplot as plt  
 import numpy as np   
+from datetime import datetime
+import glob
 
 def collect_twitter_data(outfilename):
     """ Collect data through Twitter API and export to JSON file. """
@@ -72,15 +74,13 @@ def flatten_tweets(tweets_dict_list):
     # Iterate through each tweet
     for tweet_obj in tweets_dict_list:
     
-        # Store the user screen name in 'user-screen_name'
+        # Store the user screen name, timestamp, and location
         tweet_obj['user-screen_name'] = tweet_obj['user']['screen_name']
         tweet_obj['created_at'] =  pd.to_datetime(tweet_obj['created_at'])
-        
-        #store the location
         tweet_obj['user-location'] = tweet_obj['user']['location']
         
-
-
+        
+        
         
         # Check if this is a 140+ character tweet
         if 'extended_tweet' in tweet_obj:
@@ -88,21 +88,33 @@ def flatten_tweets(tweets_dict_list):
             #tweet_obj['extended_tweet-full_text'] = tweet_obj['extended_tweet']['full_text']
             tweet_obj['text'] = tweet_obj['text'] + tweet_obj['extended_tweet']['full_text']
     
+        # Check if this is a retweet
         if 'retweeted_status' in tweet_obj:
-            # Store the retweet user screen name in 'retweeted_status-user-screen_name'
-            tweet_obj['retweeted_status-user-screen_name'] = tweet_obj['retweeted_status']['user']['screen_name']
-            # Store the retweet text in 'retweeted_status-text'
-            tweet_obj['retweeted_status-text'] = tweet_obj['retweeted_status']['text']
-            tweet_obj['retweet-location'] = tweet_obj['retweeted_status']['user']['location']
+            # Treat the retweet and original tweet as two different tweets
+            # Store the user screen name, timestamp, and location
+            retweet_obj = {}
+            retweet_obj['user-screen_name'] = tweet_obj['retweeted_status']['user']['screen_name']
+            retweet_obj['created_at'] =  pd.to_datetime(tweet_obj['retweeted_status']['created_at'])
+            retweet_obj['user-location'] = tweet_obj['retweeted_status']['user']['location']
+            retweet_obj['text'] = tweet_obj['retweeted_status']['text']
             if 'extended_tweet' in tweet_obj['retweeted_status']:
-                tweet_obj['retweeted_status-text'] = tweet_obj['retweeted_status-text'] + tweet_obj['retweeted_status']['extended_tweet']['full_text']
+                retweet_obj['text'] = retweet_obj['text'] + tweet_obj['retweeted_status']['extended_tweet']['full_text']
+            # Add retweet to tweet list
+            tweets_list.append(retweet_obj)
             
+        # Check if this is a quoted tweet
         if 'quoted_status' in tweet_obj:
-            tweet_obj['quoted_status-text'] = tweet_obj['quoted_status']['text'] 
-            tweet_obj['quoted-location'] = tweet_obj['quoted_status']['user']['location']
+            # Treat the quoted tweet and quoting tweet as two different tweets
+            # Store the user screen name, timestamp, and location
+            quoting_tweet_obj = {}
+            quoting_tweet_obj['user-screen_name'] = tweet_obj['quoted_status']['user']['screen_name']
+            quoting_tweet_obj['created_at'] =  pd.to_datetime(tweet_obj['quoted_status']['created_at'])
+            quoting_tweet_obj['user-location'] = tweet_obj['quoted_status']['user']['location']
+            quoting_tweet_obj['text'] = tweet_obj['quoted_status']['text']
             if 'extended_tweet' in tweet_obj['quoted_status']:
-                tweet_obj['quoted_status-text'] = tweet_obj['quoted_status-text'] + tweet_obj['quoted_status']['extended_tweet']['full_text']
-        
+                quoting_tweet_obj['text'] = quoting_tweet_obj['text'] + tweet_obj['quoted_status']['extended_tweet']['full_text']
+            # Add quoting tweet to tweet list
+            tweets_list.append(quoting_tweet_obj)
         
 
         
@@ -114,16 +126,12 @@ def flatten_tweets(tweets_dict_list):
 
 def check_word_in_tweet(word, data):
     """Checks if a word is in a Twitter dataset's text. 
-    Checks text and extended tweet (140+ character tweets) for tweets,
-    retweets and quoted tweets.
+    Checks text and extended tweet (140+ character tweets) for tweets, retweets and quoted tweets.
     Returns a logical pandas Series.
     """
     contains_column = data['text'].str.contains(word, case = False)
-    #contains_column |= data['extended_tweet-full_text'].str.contains(word, case = False)
-    contains_column |= data['quoted_status-text'].str.contains(word, case = False)
-    #contains_column |= data['quoted_status-extended_tweet-full_text'].str.contains(word, case = False)
-    contains_column |= data['retweeted_status-text'].str.contains(word, case = False)
-    #contains_column |= data['retweeted_status-extended_tweet-full_text'].str.contains(word, case = False)
+    #contains_column |= data['quoted_status-text'].str.contains(word, case = False)
+    #contains_column |= data['retweeted_status-text'].str.contains(word, case = False)
     return contains_column
 
 def plotMapTime(ds_tweets, word1, word2):
@@ -174,31 +182,17 @@ def analyzeSentiment(ds_tweets, word):
 
 
 def plotSentiment(ds_tweets, word1, word2):
-    
-    sid = SentimentIntensityAnalyzer()
 
-    # Generate sentiment scores by applying polarity_scores function to all tweet text
-    sentiment_scores = ds_tweets['text'].apply(sid.polarity_scores)
-
-    # Extract compound from sentiment score. Options are: neg, neu, pos, compound
-    sentiment = sentiment_scores.apply(lambda x: x['compound'])
-    
-    
-
-    ds_tweets['sentiment1'] = sentiment[check_word_in_tweet(word1, ds_tweets)] 
+    ds_tweets['sentiment1'] = analyzeSentiment(ds_tweets, word1) 
     ds_tweets['sentiment1'].index = pd.to_datetime(ds_tweets.index, unit='s')
     sentiment1 = ds_tweets['sentiment1'].resample('1 min').mean()
     
     
-    
-    
-    
-    ds_tweets['sentiment2'] = sentiment[check_word_in_tweet(word2, ds_tweets)]
+    ds_tweets['sentiment2'] = analyzeSentiment(ds_tweets, word2)
     ds_tweets['sentiment2'].index = pd.to_datetime(ds_tweets.index, unit='s')
     sentiment2 = ds_tweets['sentiment2'].resample('1 min').mean()
     
     
-  
     
     
 
@@ -261,5 +255,31 @@ def SortByState(tweets, word1, state, abbrv, out):
     out.write("\n")
 
     
-    
-    
+def exportSentimentTimeSeries(word1, word2, outfilename):
+    '''Export time series sentiment score to JSON file.
+    Calculate average sentiment score for each input file.
+    '''
+    timeSeries = []
+    for filename in glob.glob('superbowl_2019-*', recursive=True):
+        obj = {}
+        with open(filename, 'r') as infile:
+            data = json.load(infile)
+            # Flatten twitter data
+            tweets_list = flatten_tweets(data)
+
+            # Get Time
+            obj['time'] = tweets_list[0]['created_at'].strftime('%Y-%m-%dT%H:%M:%SZ')
+            
+            # Calculate sentiment score
+            tweets = pd.DataFrame(tweets_list)
+            obj['score1'] = analyzeSentiment(tweets, word1)
+            obj['score2'] = analyzeSentiment(tweets, word2)
+            
+            # Append to time series
+            timeSeries.append(obj)
+            
+    # Export to json file
+    with open(outfilename,'w') as outfile:
+        outfile.write('timeSeries = ')
+        json.dump(timeSeries, outfile)
+    return timeSeries     
