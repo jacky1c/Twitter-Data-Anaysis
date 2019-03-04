@@ -104,7 +104,8 @@ plotSentiment(tweets, 'Trump', 'Pelosi')
 
 
 
-out = open("StatesOut.txt", "w+")
+out = open("StatesOut.txt", "+w")
+
 
 f = open("States.txt", "r")
 #f1 = f.readlines()
@@ -120,10 +121,10 @@ while True:
     
     if not line2: break
     print(line1Cut,line2Cut)
-    SortByState(tweets, 'Trump', line1Cut, line2Cut, out)
+    avg= SortByState(tweets, 'Trump', line1Cut, line2Cut, out)
     print("-------")
-   
-    
+
+
     
     
 
