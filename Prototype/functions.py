@@ -15,7 +15,7 @@ import numpy as np
 from datetime import datetime
 import glob
 
-def collect_twitter_data(outfilename):
+def collect_twitter_data(keywords_to_track, n, outfilename):
     """ Collect data through Twitter API and export to JSON file. """
     # =============================================================================
     # CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, and ACCESS_SECRET are assigned by Twitter
@@ -50,10 +50,10 @@ def collect_twitter_data(outfilename):
     stream = tweepy.Stream(auth, listen)
     
     # Set up words to track
-    keywords_to_track = ('State of the Union', 'sotu')
+    #keywords_to_track = ('State of the Union', 'sotu')
     
     # Begin collecting data
-    tweet_data = tweepy.Cursor(api.search, q=keywords_to_track, languages=["en"]).items(1000)
+    tweet_data = tweepy.Cursor(api.search, q=keywords_to_track, languages=["en"]).items(n)
     
     # Export tweets to file
     ctr = 0
@@ -67,26 +67,27 @@ def collect_twitter_data(outfilename):
         outfile.write(']')   
         
 
-def flatten_tweets(tweets_dict_list):
+def flatten_tweets(tweets_dict_list, visited_tweet_id_set):
     """ Flattens out tweet dictionaries so relevant JSON is in a top-level dictionary. """
     tweets_list = []
     
     # Iterate through each tweet
     for tweet_obj in tweets_dict_list:
-    
         # Store the user screen name, timestamp, and location
         tweet_obj['user-screen_name'] = tweet_obj['user']['screen_name']
         tweet_obj['created_at'] =  pd.to_datetime(tweet_obj['created_at'])
         tweet_obj['user-location'] = tweet_obj['user']['location']
-        
-        
-        
-        
+        if tweet_obj['place'] is not None:
+            tweet_obj['user-place-fullname'] = tweet_obj['place']['full_name']
+            tweet_obj['user-place-country-code'] = tweet_obj['place']['country_code']        
         # Check if this is a 140+ character tweet
         if 'extended_tweet' in tweet_obj:
-            # Store the extended tweet text in 'extended_tweet-full_text'
-            #tweet_obj['extended_tweet-full_text'] = tweet_obj['extended_tweet']['full_text']
             tweet_obj['text'] = tweet_obj['text'] + tweet_obj['extended_tweet']['full_text']
+        
+        # If tweet hasn't been visited, add to tweets list
+        if tweet_obj['id'] not in visited_tweet_id_set:
+            tweets_list.append(tweet_obj)
+            visited_tweet_id_set.add(tweet_obj['id'])
     
         # Check if this is a retweet
         if 'retweeted_status' in tweet_obj:
@@ -96,11 +97,16 @@ def flatten_tweets(tweets_dict_list):
             retweet_obj['user-screen_name'] = tweet_obj['retweeted_status']['user']['screen_name']
             retweet_obj['created_at'] =  pd.to_datetime(tweet_obj['retweeted_status']['created_at'])
             retweet_obj['user-location'] = tweet_obj['retweeted_status']['user']['location']
+            if tweet_obj['retweeted_status']['place'] is not None:
+                retweet_obj['user-place-fullname'] = tweet_obj['retweeted_status']['place']['full_name']
+                retweet_obj['user-place-country-code'] = tweet_obj['retweeted_status']['place']['country_code']
             retweet_obj['text'] = tweet_obj['retweeted_status']['text']
             if 'extended_tweet' in tweet_obj['retweeted_status']:
                 retweet_obj['text'] = retweet_obj['text'] + tweet_obj['retweeted_status']['extended_tweet']['full_text']
-            # Add retweet to tweet list
-            tweets_list.append(retweet_obj)
+            # If retweet hasn't been visited, add retweet to tweet list
+            if tweet_obj['retweeted_status']['id'] not in visited_tweet_id_set:
+                tweets_list.append(retweet_obj)
+                visited_tweet_id_set.add(tweet_obj['retweeted_status']['id'])
             
         # Check if this is a quoted tweet
         if 'quoted_status' in tweet_obj:
@@ -110,18 +116,17 @@ def flatten_tweets(tweets_dict_list):
             quoting_tweet_obj['user-screen_name'] = tweet_obj['quoted_status']['user']['screen_name']
             quoting_tweet_obj['created_at'] =  pd.to_datetime(tweet_obj['quoted_status']['created_at'])
             quoting_tweet_obj['user-location'] = tweet_obj['quoted_status']['user']['location']
+            if tweet_obj['quoted_status']['place'] is not None:
+                quoting_tweet_obj['user-place-fullname'] = tweet_obj['quoted_status']['place']['full_name']
+                quoting_tweet_obj['user-place-country-code'] = tweet_obj['quoted_status']['place']['country_code']
             quoting_tweet_obj['text'] = tweet_obj['quoted_status']['text']
             if 'extended_tweet' in tweet_obj['quoted_status']:
                 quoting_tweet_obj['text'] = quoting_tweet_obj['text'] + tweet_obj['quoted_status']['extended_tweet']['full_text']
-            # Add quoting tweet to tweet list
-            tweets_list.append(quoting_tweet_obj)
-        
-
-        
-        
-        
-        
-        tweets_list.append(tweet_obj)
+            # If quoting tweet hasn't been visited, add quoting tweet to tweet list
+            if tweet_obj['quoted_status']['id'] not in visited_tweet_id_set:
+                tweets_list.append(quoting_tweet_obj)
+                visited_tweet_id_set.add(tweet_obj['quoted_status']['id'])
+            
     return tweets_list
 
 def check_word_in_tweet(word, data):
@@ -192,11 +197,6 @@ def plotSentiment(ds_tweets, word1, word2):
     ds_tweets['sentiment2'].index = pd.to_datetime(ds_tweets.index, unit='s')
     sentiment2 = ds_tweets['sentiment2'].resample('1 min').mean()
     
-    
-    
-    
-
-#
     plt.plot(sentiment1.index.minute, sentiment1, color = 'green')
     plt.plot(sentiment2.index.minute, sentiment2, color = 'blue')
 
@@ -219,40 +219,49 @@ def to_str(var):
 def SortByState(tweets, word1, state, abbrv, out):
 
     containsAL1 = tweets[tweets['user-location'].str.contains(abbrv)==True]
-    containsALR = tweets[tweets['retweet-location'].str.contains(abbrv)==True]
-    containsALQ = tweets[tweets['quoted-location'].str.contains(abbrv)==True]
+    #containsALR = tweets[tweets['retweet-location'].str.contains(abbrv)==True]
+    #containsALQ = tweets[tweets['quoted-location'].str.contains(abbrv)==True]
     
     containsAL2 = tweets[tweets['user-location'].str.contains(state)==True]
-    containsALR2 = tweets[tweets['retweet-location'].str.contains(state)==True]
-    containsALQ2 = tweets[tweets['quoted-location'].str.contains(state)==True]
+    #containsALR2 = tweets[tweets['retweet-location'].str.contains(state)==True]
+    #containsALQ2 = tweets[tweets['quoted-location'].str.contains(state)==True]
 
     
     
     
     holdTweets1 = check_word_in_tweet(word1, containsAL1)
-    holdTweets2 = check_word_in_tweet(word1, containsALR)
-    holdTweets3 = check_word_in_tweet(word1, containsALQ)
+    #holdTweets2 = check_word_in_tweet(word1, containsALR)
+    #holdTweets3 = check_word_in_tweet(word1, containsALQ)
     holdTweets4 = check_word_in_tweet(word1, containsAL2)
-    holdTweets5 = check_word_in_tweet(word1, containsALR2)
-    holdTweets6 = check_word_in_tweet(word1, containsALQ2)
+    #holdTweets5 = check_word_in_tweet(word1, containsALR2)
+    #holdTweets6 = check_word_in_tweet(word1, containsALQ2)
     
     
-    numOfTweets = np.sum(holdTweets1) + np.sum(holdTweets2) + np.sum(holdTweets3) + np.sum(holdTweets4) + np.sum(holdTweets5) + np.sum(holdTweets6)
-    
+    #numOfTweets = np.sum(holdTweets1) + np.sum(holdTweets2) + np.sum(holdTweets3) + np.sum(holdTweets4) + np.sum(holdTweets5) + np.sum(holdTweets6)
+    numOfTweets = np.sum(holdTweets1) + np.sum(holdTweets4)
   
 
     
-    sumAL = np.sum(containsAL1['sentiment1']) + np.sum(containsALR['sentiment1']) + np.sum(containsALQ['sentiment1']) + np.sum(containsAL2['sentiment1']) + np.sum(containsALR2['sentiment1']) + np.sum(containsALQ2['sentiment1'])
+    #sumAL = np.sum(containsAL1['sentiment1']) + np.sum(containsALR['sentiment1']) + np.sum(containsALQ['sentiment1']) + np.sum(containsAL2['sentiment1']) + np.sum(containsALR2['sentiment1']) + np.sum(containsALQ2['sentiment1'])
+    sumAL = np.sum(containsAL1['sentiment1']) + np.sum(containsAL2['sentiment1'])
     AverageAL = sumAL/numOfTweets
     
     stringAv = to_str(AverageAL)
     
     
-    
+    out.write("'")
     out.write(state)
+    out.write("':")
     out.write(" ")
-    out.write(stringAv)
-    out.write("\n")
+    print(stringAv)
+    if stringAv == "nan":
+        out.write("999")
+    else:
+        out.write(stringAv)
+        
+        
+    if state != "D.C.":
+        out.write(",\n")
 
     
 def exportSentimentTimeSeries(word1, word2, outfilename):
@@ -260,12 +269,13 @@ def exportSentimentTimeSeries(word1, word2, outfilename):
     Calculate average sentiment score for each input file.
     '''
     timeSeries = []
+    visited_tweet_id_set = set()
     for filename in glob.glob('superbowl_2019-*', recursive=True):
         obj = {}
         with open(filename, 'r') as infile:
             data = json.load(infile)
             # Flatten twitter data
-            tweets_list = flatten_tweets(data)
+            tweets_list = flatten_tweets(data, visited_tweet_id_set)
 
             # Get Time
             obj['time'] = tweets_list[0]['created_at'].strftime('%Y-%m-%dT%H:%M:%SZ')
@@ -283,3 +293,20 @@ def exportSentimentTimeSeries(word1, word2, outfilename):
         outfile.write('timeSeries = ')
         json.dump(timeSeries, outfile)
     return timeSeries     
+
+
+def parseState(tweet_obj, geoStr):
+    geoStr = ''
+    # user place is more accurate than location
+    if 'user-place-fullname' in tweet_obj:
+        if tweet_obj['user-place-country-code'].upper() == 'US':
+            geoStr = tweet_obj['user-place-fullname']
+    else:
+        geoStr = tweet_obj['user-location']
+     # tokenize string by empty space
+     
+     # search state full name and state abbreviation in tokens
+     
+     # return state full name
+
+

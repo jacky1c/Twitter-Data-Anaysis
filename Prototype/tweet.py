@@ -24,19 +24,21 @@ from functions import * # self defined functions
 
 
 # File to save Twitter data
-currentDT = datetime.datetime.now()
+currentDT = datetime.now()
 timeStr = currentDT.strftime("%Y-%m-%d_%H:%M:%S")
 outfilename = 'SOTU_'+timeStr+'.json'
 
 # Collect data from Twitter API and export to json file
-#collect_twitter_data(outfilename)    
+keywords_to_track = ('State of the Union', 'sotu')
+#collect_twitter_data(keywords_to_track, 1000, outfilename)    
         
 # Load json data from file to python dictionary
-with open('SOTU_2019-02-06_16:03:09.json') as infile:
+with open('SOTU_2019-03-17_14:43:49.json') as infile:
     data = json.load(infile)
 
 # Flatten twitter data
-tweets_list = flatten_tweets(data)
+visited_tweet_id_set = set()
+tweets_list = flatten_tweets(data, visited_tweet_id_set)
 
 # Create a DataFrame from `twitter data
 tweets = pd.DataFrame(tweets_list)
@@ -108,6 +110,7 @@ out = open("StatesOut.txt", "+w")
 
 
 f = open("States.txt", "r")
+out.write("{")
 #f1 = f.readlines()
 while True:
     line1 = f.readline()
@@ -124,8 +127,8 @@ while True:
     avg= SortByState(tweets, 'Trump', line1Cut, line2Cut, out)
     print("-------")
 
+out.write("}")
 
-    
     
 
 
