@@ -5,6 +5,7 @@ Created on Sun Feb  3 13:14:44 2019
 @author: jacky
 """
 import json
+import os
 import tweepy
 from tweepy.streaming import StreamListener
 from slistener import SListener
@@ -15,13 +16,19 @@ import numpy as np
 from datetime import datetime
 import glob
 
+
 def collect_twitter_data(keywords_to_track, n, outfilename):
-    """ Collect data through Twitter API and export to JSON file. """
+    """Collect tweets through Twitter API
+    
+    Arguments:
+        keywords_to_track {tuple} -- tuple of keywords
+        n {integer} -- number of tweets per harvest
+        outfilename {string} -- name of output file
+    """
+
     # =============================================================================
     # CONSUMER_KEY, CONSUMER_SECRET, ACCESS_TOKEN, and ACCESS_SECRET are assigned by Twitter
     # =============================================================================
-    
-    # Twitter App access keys for @user
 
     # Consume:
     CONSUMER_KEY    = 'azhIXA4y3kR5xLcceOpHyLxtU'
@@ -30,7 +37,6 @@ def collect_twitter_data(keywords_to_track, n, outfilename):
     # Access:
     ACCESS_TOKEN  = '1955396544-vbAEUgorMO14epJ808JrthxKfxh3PULVtRv6V84'
     ACCESS_SECRET = 'thT5XIRYYq1Qbt9rnSVUzworHwmsKH0cY0QQta1jkiGKz'
-
 
     # Consumer key authentication
     auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)
@@ -49,9 +55,6 @@ def collect_twitter_data(keywords_to_track, n, outfilename):
     # Instantiate the Stream object
     stream = tweepy.Stream(auth, listen)
     
-    # Set up words to track
-    #keywords_to_track = ('State of the Union', 'sotu')
-    
     # Begin collecting data
     tweet_data = tweepy.Cursor(api.search, q=keywords_to_track, languages=["en"]).items(n)
     
@@ -59,16 +62,30 @@ def collect_twitter_data(keywords_to_track, n, outfilename):
     ctr = 0
     with open(outfilename,'w') as outfile:
         outfile.write('[')
-        for twit in tweet_data:
+        for tweet in tweet_data:
             ctr = ctr+1
-            json.dump(twit._json, outfile)
-            if ctr != 1000:
+            if ctr != 1:
                 outfile.write(',')
+            json.dump(tweet._json, outfile)
         outfile.write(']')   
-        
+
 
 def flatten_tweets(tweets_dict_list, visited_tweet_id_set):
-    """ Flattens out tweet dictionaries so relevant JSON is in a top-level dictionary. """
+    """ Flattens out tweet dictionaries so relevant JSON is in a top-level dictionary.
+    Attributes:
+        user-screen_name {string}
+        created_at {datetime}
+        user-location {string}
+        user-place-fullname {string}
+        user-place-country-code {string}
+
+    Arguments:
+        tweets_dict_list {list} -- list of tweets
+        visited_tweet_id_set {set} -- set of visited tweet ID
+    
+    Returns:
+        list -- list of flattened tweets
+    """
     tweets_list = []
     
     # Iterate through each tweet
@@ -129,18 +146,33 @@ def flatten_tweets(tweets_dict_list, visited_tweet_id_set):
             
     return tweets_list
 
+
 def check_word_in_tweet(word, data):
     """Checks if a word is in a Twitter dataset's text. 
-    Checks text and extended tweet (140+ character tweets) for tweets, retweets and quoted tweets.
+    Checks text and extended tweet (140+ character tweets) for tweets.
     Returns a logical pandas Series.
+    
+    
+    Arguments:
+        word {string} -- keyword to find
+        data {dataframe} -- tweets
+    
+    Returns:
+        series -- logical pandas Series
     """
+
     contains_column = data['text'].str.contains(word, case = False)
-    #contains_column |= data['quoted_status-text'].str.contains(word, case = False)
-    #contains_column |= data['retweeted_status-text'].str.contains(word, case = False)
     return contains_column
 
+
 def plotMapTime(ds_tweets, word1, word2):
+    """[summary]
     
+    Arguments:
+        ds_tweets {dataframe} -- [description]
+        word1 {string} -- [description]
+        word2 {string} -- [description]
+    """
 
     ds_tweets['word1'] = check_word_in_tweet(word1, ds_tweets)
     ds_tweets['word2'] = check_word_in_tweet(word2, ds_tweets)
@@ -152,11 +184,8 @@ def plotMapTime(ds_tweets, word1, word2):
     mean1 = ds_tweets['word1'].resample('1 min').mean()
     mean2 = ds_tweets['word2'].resample('1 min').mean()
 
-
-
     plt.plot(mean1.index.minute, mean1, color = 'green')
     plt.plot(mean2.index.minute, mean2, color = 'blue')
-
 
     plt.xlabel('Minute'); plt.ylabel('Frequency')
     plt.title('Language mentions over time')
@@ -164,10 +193,17 @@ def plotMapTime(ds_tweets, word1, word2):
     plt.show()
 
 
-
-
-
 def analyzeSentiment(ds_tweets, word):
+    """Calculate sentiment score of all tweets that contain a keyword and return average sentiment score
+    
+    Arguments:
+        ds_tweets {dataframe} -- tweets
+        word {string} -- keyword to search
+    
+    Returns:
+        float -- average sentiment score
+    """
+
     # Instantiate sentiment intensity analyzer
     sid = SentimentIntensityAnalyzer()
 
@@ -183,10 +219,14 @@ def analyzeSentiment(ds_tweets, word):
     return sentimentAnalysis
 
 
-
-
-
 def plotSentiment(ds_tweets, word1, word2):
+    """Plot sentiment
+    
+    Arguments:
+        ds_tweets {dataframe} -- dataframe of tweets
+        word1 {string} -- keyword1
+        word2 {string} -- keyword2
+    """
 
     ds_tweets['sentiment1'] = analyzeSentiment(ds_tweets, word1) 
     ds_tweets['sentiment1'].index = pd.to_datetime(ds_tweets.index, unit='s')
@@ -207,106 +247,69 @@ def plotSentiment(ds_tweets, word1, word2):
     plt.show()
 
     
-    
-    
- #https://stackoverflow.com/questions/24914735/convert-numpy-list-or-float-to-string-in-python   
 def to_str(var):
+    """Convert a value to string
+
+    Reference: #https://stackoverflow.com/questions/24914735/convert-numpy-list-or-float-to-string-in-python
+    
+    """
     return str(list(np.reshape(np.asarray(var), (1, np.size(var)))[0]))[1:-1]
 
 
+def SortByState(tweets, word, state, abbrv, out):
+    """Find all tweets that contain a keyword and they are tweeted from a certain state. 
+    Caluclate average sentiment score.
+    Write the result to output file in JSON format.
 
+    Result format:
+        'state_fullname': avg_sentiment_score
+    
+    Arguments:
+        tweets {dataframe} -- dataframe of tweets
+        word {string} -- keyword to check
+        state {string} -- state fullname
+        abbrv {string} -- state name abrreviation
+        out {_io.TextIOWrapper} -- output file
+    """     
 
-def SortByState(tweets, word1, state, abbrv, out):
-
-    containsAL1 = tweets[tweets['user-location'].str.contains(abbrv)==True]
-    #containsALR = tweets[tweets['retweet-location'].str.contains(abbrv)==True]
-    #containsALQ = tweets[tweets['quoted-location'].str.contains(abbrv)==True]
+    # find tweets that match the state
+    tweets_in_state = tweets[tweets['user-location'].str.contains(state) | tweets['user-place-fullname'].str.contains(state) | (abbrv in tweets['user-location'].str.split(', ')) | (abbrv in tweets['user-place-fullname'].str.split(', '))]
+    # calculate average sentiment score
+    tweets_in_state_sentiment = analyzeSentiment(tweets_in_state, word)
     
-    containsAL2 = tweets[tweets['user-location'].str.contains(state)==True]
-    #containsALR2 = tweets[tweets['retweet-location'].str.contains(state)==True]
-    #containsALQ2 = tweets[tweets['quoted-location'].str.contains(state)==True]
-
+    stringAv = to_str(tweets_in_state_sentiment)
     
-    
-    
-    holdTweets1 = check_word_in_tweet(word1, containsAL1)
-    #holdTweets2 = check_word_in_tweet(word1, containsALR)
-    #holdTweets3 = check_word_in_tweet(word1, containsALQ)
-    holdTweets4 = check_word_in_tweet(word1, containsAL2)
-    #holdTweets5 = check_word_in_tweet(word1, containsALR2)
-    #holdTweets6 = check_word_in_tweet(word1, containsALQ2)
-    
-    
-    #numOfTweets = np.sum(holdTweets1) + np.sum(holdTweets2) + np.sum(holdTweets3) + np.sum(holdTweets4) + np.sum(holdTweets5) + np.sum(holdTweets6)
-    numOfTweets = np.sum(holdTweets1) + np.sum(holdTweets4)
-  
-
-    
-    #sumAL = np.sum(containsAL1['sentiment1']) + np.sum(containsALR['sentiment1']) + np.sum(containsALQ['sentiment1']) + np.sum(containsAL2['sentiment1']) + np.sum(containsALR2['sentiment1']) + np.sum(containsALQ2['sentiment1'])
-    sumAL = np.sum(containsAL1['sentiment1']) + np.sum(containsAL2['sentiment1'])
-    AverageAL = sumAL/numOfTweets
-    
-    stringAv = to_str(AverageAL)
-    
-    
+    # write to file
     out.write("'")
     out.write(state)
     out.write("':")
     out.write(" ")
+    print(state, abbrv)
     print(stringAv)
+    print("-------")
     if stringAv == "nan":
         out.write("999")
     else:
         out.write(stringAv)
         
-        
     if state != "D.C.":
         out.write(",\n")
 
     
-def exportSentimentTimeSeries(word1, word2, outfilename):
-    '''Export time series sentiment score to JSON file.
-    Calculate average sentiment score for each input file.
-    '''
-    timeSeries = []
-    visited_tweet_id_set = set()
-    for filename in glob.glob('superbowl_2019-*', recursive=True):
-        obj = {}
-        with open(filename, 'r') as infile:
-            data = json.load(infile)
-            # Flatten twitter data
-            tweets_list = flatten_tweets(data, visited_tweet_id_set)
+def FormatDatetime(dt):
+    """Format datetime string
 
-            # Get Time
-            obj['time'] = tweets_list[0]['created_at'].strftime('%Y-%m-%dT%H:%M:%SZ')
-            
-            # Calculate sentiment score
-            tweets = pd.DataFrame(tweets_list)
-            obj['score1'] = analyzeSentiment(tweets, word1)
-            obj['score2'] = analyzeSentiment(tweets, word2)
-            
-            # Append to time series
-            timeSeries.append(obj)
-            
-    # Export to json file
-    with open(outfilename,'w') as outfile:
-        outfile.write('timeSeries = ')
-        json.dump(timeSeries, outfile)
-    return timeSeries     
+    Format: YYYY-MM-DD HH:MM:SS
+    
+    Arguments:
+        dt {string} -- datetime string
+    
+    Returns:
+        string -- formatted datetime string
+    """
 
-
-def parseState(tweet_obj, geoStr):
-    geoStr = ''
-    # user place is more accurate than location
-    if 'user-place-fullname' in tweet_obj:
-        if tweet_obj['user-place-country-code'].upper() == 'US':
-            geoStr = tweet_obj['user-place-fullname']
-    else:
-        geoStr = tweet_obj['user-location']
-     # tokenize string by empty space
-     
-     # search state full name and state abbreviation in tokens
-     
-     # return state full name
-
-
+    dt = dt.replace("_", " ")
+    li = list(dt)
+    li[13] = ":"
+    li[16] = ":"
+    return "".join(li)
