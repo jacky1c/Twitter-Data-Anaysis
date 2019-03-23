@@ -3,7 +3,10 @@
 """
 Created on Mon Jan 28 12:09:09 2019
 
-@author: jacky
+@author: 
+    Alexander Biezenski, SID: 200315435
+    Shengye Chen, SID: 200354388
+    Elizabeth Rayner, SID:200365470
 """                         
                              
 import pandas as pd  
@@ -83,6 +86,6 @@ while True:
     SortByState(all_Trump_tweets, 'Trump', line1Cut, line2Cut, outFile)
 
 outFile.write("\n}")
-        
+
 
 

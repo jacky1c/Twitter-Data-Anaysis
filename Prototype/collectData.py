@@ -3,7 +3,10 @@
 """
 Created on Mon Jan 28 12:09:09 2019
 
-@author: jacky
+@author: 
+    Alexander Biezenski, SID: 200315435
+    Shengye Chen, SID: 200354388
+    Elizabeth Rayner, SID:200365470
 """                         
                              
 import pandas as pd  

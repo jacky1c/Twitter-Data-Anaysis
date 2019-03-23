@@ -2,7 +2,10 @@
 # -*- coding: utf-8 -*-
 """
 Created on Sun Feb  3 13:14:44 2019
-@author: jacky
+@author: 
+    Alexander Biezenski, SID: 200315435
+    Shengye Chen, SID: 200354388
+    Elizabeth Rayner, SID:200365470
 """
 import json
 import os
@@ -166,24 +169,26 @@ def check_word_in_tweet(word, data):
 
 
 def plotMapTime(ds_tweets, word1, word2):
-    """[summary]
+    """Plot percentage of mentions by time
     
     Arguments:
-        ds_tweets {dataframe} -- [description]
-        word1 {string} -- [description]
-        word2 {string} -- [description]
+        ds_tweets {dataframe} -- dataframe of tweets
+        word1 {string} -- keyword 1
+        word2 {string} -- keyword 2
     """
 
     ds_tweets['word1'] = check_word_in_tweet(word1, ds_tweets)
     ds_tweets['word2'] = check_word_in_tweet(word2, ds_tweets)
 
+    # Convert index to a time
     ds_tweets['word1'].index = pd.to_datetime(ds_tweets.index, unit='s')
     ds_tweets['word2'].index = pd.to_datetime(ds_tweets.index, unit='s')
 
-
+    # Resample seconds to minutes and calcualte average
     mean1 = ds_tweets['word1'].resample('1 min').mean()
     mean2 = ds_tweets['word2'].resample('1 min').mean()
 
+    # start to plot on graph
     plt.plot(mean1.index.minute, mean1, color = 'green')
     plt.plot(mean2.index.minute, mean2, color = 'blue')
 
@@ -220,7 +225,7 @@ def analyzeSentiment(ds_tweets, word):
 
 
 def plotSentiment(ds_tweets, word1, word2):
-    """Plot sentiment
+    """Plot sentiment by time
     
     Arguments:
         ds_tweets {dataframe} -- dataframe of tweets
