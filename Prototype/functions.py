@@ -62,8 +62,11 @@ def collect_twitter_data(keywords_to_track, n, outfilename):
     tweet_data = tweepy.Cursor(api.search, q=keywords_to_track, languages=["en"]).items(n)
     
     # Export tweets to file
+    script_dir = os.path.dirname(__file__)
+    rel_path = "twitter_data/" + outfilename
+    abs_file_path = os.path.join(script_dir, rel_path)
     ctr = 0
-    with open(outfilename,'w') as outfile:
+    with open(abs_file_path,'w') as outfile:
         outfile.write('[')
         for tweet in tweet_data:
             ctr = ctr+1
@@ -71,7 +74,7 @@ def collect_twitter_data(keywords_to_track, n, outfilename):
                 outfile.write(',')
             json.dump(tweet._json, outfile)
         outfile.write(']')   
-
+        outfile.close()
 
 def flatten_tweets(tweets_dict_list, visited_tweet_id_set):
     """ Flattens out tweet dictionaries so relevant JSON is in a top-level dictionary.

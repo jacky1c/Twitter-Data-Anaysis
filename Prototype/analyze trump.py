@@ -33,14 +33,14 @@ with open("TrumpTimeSeries.js", "+w") as outfile:
     outfile.write("var Trump_ScoreByTime = {\n")
     ctr = 0
     print("Trump sentiment score by time:")
-    for inFileName in glob.glob('Trump_*', recursive=True):
+    for inFileName in glob.glob('twitter_data/Trump_*', recursive=True):
         with open(inFileName, 'r') as infile:
             # the first key-value pair doesn't have prefix comma
             ctr = ctr + 1
             if ctr != 1:
                 outfile.write(",\n")
             # get datetime from file name
-            dateTime = inFileName[6:-5]
+            dateTime = inFileName[-24:-5]
             dateTime = FormatDatetime(dateTime)
             data = json.load(infile)
             # Flatten twitter data
@@ -54,7 +54,9 @@ with open("TrumpTimeSeries.js", "+w") as outfile:
             # write time and sentiment score as key-value pair to output file
             outfile.write("'%s': %f" % (dateTime, sentimentScore))
             print("'%s': %f" % (dateTime, sentimentScore))
+        infile.close()
     outfile.write("\n}")
+    outfile.close()
 
 # Export sentiment score by state
 all_Trump_tweets = pd.DataFrame(all_Trump_tweets_list)
@@ -86,6 +88,7 @@ while True:
     SortByState(all_Trump_tweets, 'Trump', line1Cut, line2Cut, outFile)
 
 outFile.write("\n}")
-
+inFile.close()
+outFile.close()
 
 

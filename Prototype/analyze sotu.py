@@ -30,10 +30,11 @@ trump_sentiment_score_dict = {}
 pelosi_mention_dict = {}
 pelosi_sentiment_score_dict = {}
 
+
 # open all SOTU files
-for inFileName in glob.glob('SOTU_*', recursive=True):
+for inFileName in glob.glob('twitter_data/SOTU_*', recursive=True):
     with open(inFileName, 'r') as infile:
-        dateTime = inFileName[5:-5]
+        dateTime = inFileName[-24:-5]
         dateTime = FormatDatetime(dateTime)
         data = json.load(infile)
         tweets_list = flatten_tweets(data, set())
@@ -50,6 +51,7 @@ for inFileName in glob.glob('SOTU_*', recursive=True):
         
         pelosi_sentiment_score = analyzeSentiment(ds_tweets, 'Pelosi')
         pelosi_sentiment_score_dict[dateTime] = pelosi_sentiment_score
+    infile.close()
         
 # write result to an output file
 with open("SotuTimeSeries.js", "+w") as outfile:
@@ -101,3 +103,4 @@ with open("SotuTimeSeries.js", "+w") as outfile:
         outfile.write("'%s': %f" % (dateTime, score))
         print("'%s': %f" % (dateTime, score))
     outfile.write("\n}; \n\n")
+outfile.close()      
