@@ -2,7 +2,9 @@ body {background-color: rgb(241, 241, 241)}
 
 #map { height: 560px; width: 90%; margin: auto }
 
-#time-series-chart { width: 90%; height: 500px; margin: auto}
+
+#time-series-chart-trump { width: 90%; height: 500px; margin: auto; margin-top: 40px; border: solid; padding-top: 5px}
+#time-series-chart-SotU { width: 90%; height: 500px; margin: auto; margin-top: 40px; border: solid; padding-top: 5px}
 
 .info {
     padding: 6px 8px;
