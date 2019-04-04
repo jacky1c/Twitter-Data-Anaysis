@@ -8,7 +8,7 @@ function drawSentimentTimeSeries(){
 	for (var j = 0; j < pelosiKeys.length; j++) {
         data2.push([Date.parse(pelosiKeys[j]), Pelosi_ScoreByTime[pelosiKeys[j]]]);
     }
-	
+
     data1.sort(function(a, b){
         return a[0]-b[0];
     })
@@ -20,7 +20,12 @@ function drawSentimentTimeSeries(){
         type: 'spline',
 		backgroundColor: '#F1F1F1'
     };
-
+    var title ={
+        text: 'Twitter Sentiment Score'
+    };
+    var subtitle ={
+        text: 'Trump vs Pelosi'
+    };
     var xAxis = {
         type: 'datetime',
         dateTimeLabelFormats: { // don't display the dummy year
@@ -52,15 +57,18 @@ function drawSentimentTimeSeries(){
 
     var series = [{
         name: 'Trump Sentiment',
-        data: data1
+        data: data1,
+        color: '#BF0A30'
     },{
         name: 'Pelosi Sentiment',
-        data: data2
+        data: data2,
+        color: '#002868'
     }];
 
     var config = {};
     config.chart = chart;
-    config.title = false;
+    config.title = title;
+    config.subtitle = subtitle;
     config.xAxis = xAxis;
     config.yAxis = yAxis;
     config.tooltip = tooltip;

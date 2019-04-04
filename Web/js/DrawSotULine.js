@@ -28,14 +28,18 @@ function drawSotUTimeSeries(){
 	data4.sort(function(a, b){
         return a[0]-b[0];
     })
-	
+
     var chart = {
         type: 'spline',
 		backgroundColor: '#F1F1F1'
     };
-	
-	var name = 'State of the Union: Trump Sentiment & Mention vs. Pelosi Sentiment & Mention';
 
+	var title = {
+        text: 'Tweets Regarding State of the Union'
+    };
+    var subtitle = {
+        text: 'Trump Sentiment & Mention vs. Pelosi Sentiment & Mention'
+    };
     var xAxis = {
         type: 'datetime',
         dateTimeLabelFormats: { // don't display the dummy year
@@ -67,21 +71,36 @@ function drawSotUTimeSeries(){
 
     var series = [{
         name: 'Trump Mention',
-        data: data1
+        data: data1,
+        tooltip: {
+            pointFormatter: function(){
+                return "Trump Mention: <b>" + Math.round(this.y*10000)/100 + "%</b><br>";
+            }
+        },
+        color: '#F7B2AD'
     },{
         name: 'Pelosi Mention',
-        data: data2
+        data: data2,
+        tooltip: {
+            pointFormatter: function(){
+                return "Pelosi Mention: <b>" + Math.round(this.y*10000)/100 + "%</b><br>";
+            }
+        },
+        color: '#8FB8DE'
     },{
-	name: 'Sentiment Towards Trump',
-	data: data3
+    	name: 'Sentiment Towards Trump',
+    	data: data3,
+        color: '#BF0A30'
     },{
-	name: 'Sentiment Towards Pelosi',
-	data: data4
+    	name: 'Sentiment Towards Pelosi',
+    	data: data4,
+        color: '#002868'
     }];
 
     var config = {};
     config.chart = chart;
-    config.title = name;
+    config.title = title;
+    config.subtitle = subtitle;
     config.xAxis = xAxis;
     config.yAxis = yAxis;
     config.tooltip = tooltip;

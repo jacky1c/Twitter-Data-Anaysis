@@ -2,29 +2,29 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
-		<link rel="stylesheet" href="/~biezensa/js/leaflet/leaflet.css">
-		<link rel="stylesheet" href="/~biezensa/mystyle.css">
-		<script src="/~biezensa/js/leaflet/leaflet.js"></script>
-		<script src="/~biezensa/js/leaflet/trump-states.js"></script>
-		<script src="/~biezensa/js/leaflet/pelosi-states.js"></script>
-		<script src="/~biezensa/js/TrumpStates.js"></script>
-		<script src="/~biezensa/js/PelosiStates.js"></script>
-		<script src="/~biezensa/js/highcharts/highcharts.js"></script>
-		<script src="/~biezensa/js/highcharts/modules/series-label.js"></script>
-		<script src="/~biezensa/js/highcharts/modules/exporting.js"></script>
-		<script src="/~biezensa/js/TrumpTimeSeries.js"></script>
-		<script src="/~biezensa/js/SotuTimeSeries.js"></script>
-		<script src="/~biezensa/js/PelosiTimeSeries.js"></script>
-		<script src="/~biezensa/js/time series data.js"></script>
-		<script src="/~biezensa/js/DrawSentimentLine.js"></script>
-		<script src="/~biezensa/js/DrawSotULine.js"></script>
+		<link rel="stylesheet" href="js/leaflet/leaflet.css">
+		<link rel="stylesheet" href="mystyle.css">
+		<script src="js/leaflet/leaflet.js"></script>
+		<script src="js/leaflet/trump-states.js"></script>
+		<script src="js/leaflet/pelosi-states.js"></script>
+		<script src="js/TrumpStates.js"></script>
+		<script src="js/PelosiStates.js"></script>
+		<script src="js/highcharts/highcharts.js"></script>
+		<script src="js/highcharts/modules/series-label.js"></script>
+		<script src="js/highcharts/modules/exporting.js"></script>
+		<script src="js/TrumpTimeSeries.js"></script>
+		<script src="js/SotuTimeSeries.js"></script>
+		<script src="js/PelosiTimeSeries.js"></script>
+		<script src="js/time series data.js"></script>
+		<script src="js/DrawSentimentLine.js"></script>
+		<script src="js/DrawSotULine.js"></script>
 		<title>CS 421 Project - Alex B., Jacky C., Elizabeth R. </title>
 	</head>
 	<body>
 		<h1>CS 421 Project Implementation</h1>
 
 		<div id="map"></div>
-		
+
 		<script>
 			var map = L.map('map').setView([37.8, -96], 4);
 			var trumpGeoJson, pelosiGeoJson;
@@ -36,7 +36,7 @@
 					'Imagery ?<a href="https://www.mapbox.com/">Mapbox</a>',
 				id: 'mapbox.light'
 			}).addTo(map);
-			
+
 			// Returns a hex colour code based on the parameter d
 			function getColor(d) {
 			return d > 1 ? '#8A8A8A' :
@@ -53,13 +53,13 @@
 				   d > -1.01? '#0100E0' :
 							  '#000000';
 			}
-			
+
 			// Matches sentiment score per state from the python output to the correct state.
 			for (x in trumpStatesData.features) {
 				trumpStatesData.features[x].properties.sentiment = Trump_ScoreByState[trumpStatesData.features[x].properties.name];
 				pelosiStatesData.features[x].properties.sentiment = Pelosi_ScoreByState[pelosiStatesData.features[x].properties.name];
 			}
-			
+
 			//Leaflet style function that determines how to colour each geoJson object/state.
 			function style(feature) {
 				return {
@@ -71,7 +71,7 @@
 					fillOpacity: 0.7
 				};
 			}
-			
+
 			function posNeg(d)
 			{
 				if(d == 999)
@@ -88,8 +88,8 @@
 				}
 				return 'Negative';
 			}
-			
-			
+
+
 			//Section to do popups with information per state on mouseover
 			var info = L.control();
 
@@ -107,7 +107,7 @@
 			};
 
 			info.addTo(map);
-			
+
 			//Leaflet highlight function that performs the outlining of functions on mouse over.
 			function highlightFeature(e) {
 				var layer = e.target;
@@ -122,22 +122,22 @@
 				if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
 					layer.bringToFront();
 				}
-				
+
 				info.update(layer.feature.properties);
 			}
-			
+
 			//Leaflet reset function to remove highlighting on mouse out.
 			function resetHighlight(e) {
 				trumpGeoJson.resetStyle(e.target);
 				pelosiGeoJson.resetStyle(e.target);
 				info.update();
 			}
-			
+
 			//Leaflet zoom function that zooms to the clicked state.
 			function zoomToFeature(e) {
 				map.fitBounds(e.target.getBounds());
 			}
-			
+
 			//Leaflet function that adds a specified feature to every geoJson feature (state)
 			function onEachFeature(feature, layer) {
 				layer.on({
@@ -146,7 +146,7 @@
 					click: zoomToFeature
 				});
 			}
-			
+
 			//Set up the map overlay
 			trumpGeoJson = L.geoJson(trumpStatesData, {style: style, onEachFeature: onEachFeature});
 			pelosiGeoJson = L.geoJson(pelosiStatesData, {style: style, onEachFeature: onEachFeature});
@@ -155,14 +155,14 @@
 				"Trump Sentiment": trumpGeoJson,
 				"Pelosi Sentiment": pelosiGeoJson
 			};
-			
+
 			//Legend for Colour Scheme
 			var legend = L.control({position: 'bottomright'});
 			legend.onAdd = function (map) {
 				var div = L.DomUtil.create('div', 'info legend'),
 					grades = [0.7, 0.4, 0.1, 0.05, 2, 0, -0.05, -0.1, -0.4, -0.7, -1, 1],
 					labels = ['0.7 - 1', '0.4 - 0.7', '0.1 - 0.4', '0.05 - 0.1', '0 - 0.05', '0', '0 - -0.05', '-0.05 - -0.1', '-0.1 - -0.4', '-0.4 - -0.7', '-0.7 - -1', 'N/A'];
-					
+
 				// loop through our sentiment intervals and generate a label with a colored square for each interval
 				for (var i = 0; i < grades.length; i++) {
 					var temp = 0;
@@ -174,16 +174,16 @@
 					{
 						temp = grades[i] + 0.01;
 					}
-					
-					
-				
+
+
+
 					div.innerHTML +=
 						'<i style="background:' + getColor(temp) + '"></i> ' + labels[i] + '<br>';
 				}
 
 				return div;
 			};
-			
+
 			//Add everything to map
 			map.addLayer(trumpGeoJson);
 			L.control.layers(baseMaps).addTo(map);
@@ -201,5 +201,5 @@
 		<script>
 			drawSotUTimeSeries();
 		</script>
-	</body>		
+	</body>
 </html>
