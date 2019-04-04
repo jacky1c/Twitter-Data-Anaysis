@@ -34,12 +34,11 @@ def collect_twitter_data(keywords_to_track, n, outfilename):
     # =============================================================================
 
     # Consume:
-    CONSUMER_KEY    = 'azhIXA4y3kR5xLcceOpHyLxtU'
-    CONSUMER_SECRET = 'YWmMDQaGsck3J9Suboj5Pv6r6UhZ7CJozGV0srcQXk8uW0Mjfr'
+    CONSUMER_KEY = 'JwwT7m1VDOBAE8B6GtVByJGQc'
+    CONSUMER_SECRET = 'CZZapYECTEJfwa7k1Q1Bc78l7s1l70Z2a1LeURNmzv9V87B6Nw'
+    ACCESS_TOKEN = '2807778672-2fCpNEvs7V0Rlg7JAeJDPLzNGmpj72qclulmdr4'
+    ACCESS_SECRET = 'leP205x262bbTgKqdVjJQbTzdO8wwBRs4sbMrT1jN9WSr'
 
-    # Access:
-    ACCESS_TOKEN  = '1955396544-vbAEUgorMO14epJ808JrthxKfxh3PULVtRv6V84'
-    ACCESS_SECRET = 'thT5XIRYYq1Qbt9rnSVUzworHwmsKH0cY0QQta1jkiGKz'
 
     # Consumer key authentication
     auth = tweepy.OAuthHandler(CONSUMER_KEY, CONSUMER_SECRET)

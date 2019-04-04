@@ -40,17 +40,20 @@ for inFileName in glob.glob('twitter_data/SOTU_*', recursive=True):
         tweets_list = flatten_tweets(data, set())
         ds_tweets = pd.DataFrame(tweets_list)
         # calculate percentage of mentions and average sentiment score
+        
         trump_mention = check_word_in_tweet('Trump', ds_tweets).mean()
         trump_mention_dict[dateTime] = trump_mention
         
         trump_sentiment_score = analyzeSentiment(ds_tweets, 'Trump')
         trump_sentiment_score_dict[dateTime] = trump_sentiment_score
+        print("'%s': Trump sentiment = %f; mention = %f" % (dateTime, trump_sentiment_score, trump_mention))
         
         pelosi_mention = check_word_in_tweet('Pelosi', ds_tweets).mean()
         pelosi_mention_dict[dateTime] = pelosi_mention
         
         pelosi_sentiment_score = analyzeSentiment(ds_tweets, 'Pelosi')
         pelosi_sentiment_score_dict[dateTime] = pelosi_sentiment_score
+        print("'%s': Pelosi sentiment = %f; mention = %f" % (dateTime, pelosi_sentiment_score, pelosi_mention))
     infile.close()
         
 # write result to an output file
